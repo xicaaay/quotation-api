@@ -1,9 +1,113 @@
+// Prisma Client generado para ser utilizado desde el proyecto NestJS.
+// Se mantiene CommonJS para respetar la configuración actual del proyecto.
 generator client {
   provider     = "prisma-client"
   output       = "../src/generated/prisma"
   moduleFormat = "cjs"
 }
 
+// La URL de PostgreSQL se obtiene desde prisma.config.ts mediante DATABASE_URL.
 datasource db {
   provider = "postgresql"
+}
+
+// Área principal a la que pertenece el producto o servicio.
+enum DmProductArea {
+  DESIGN
+  DEVELOPMENT
+
+  @@map("dm_product_area")
+}
+
+// Define cómo se calcula el precio del producto.
+enum DmPricingType {
+  // Se multiplica el precio base por la cantidad solicitada.
+  PER_UNIT
+
+  // El precio corresponde al servicio completo, sin multiplicarlo por cantidad.
+  FIXED
+
+  // El precio se cobra de manera periódica según billingPeriod.
+  RECURRING
+
+  @@map("dm_pricing_type")
+}
+
+// Periodicidad utilizada para productos con cobro recurrente.
+enum DmBillingPeriod {
+  ONE_TIME
+  MONTHLY
+  QUARTERLY
+  YEARLY
+
+  @@map("dm_billing_period")
+}
+
+// Unidad utilizada para expresar el tiempo estimado de entrega.
+enum DmDeliveryUnit {
+  BUSINESS_DAYS
+  CALENDAR_DAYS
+  WEEKS
+  MONTHS
+
+  @@map("dm_delivery_unit")
+}
+
+// Catálogo principal de productos y servicios utilizado por la demo.
+model DmProduct {
+  // Identificador interno del registro.
+  id String @id @default(uuid()) @db.Uuid
+
+  // Código estable y legible para identificar el producto desde el backend o MCP.
+  code String @unique @db.VarChar(50)
+
+  // Nombre comercial que se mostrará en cotizaciones y propuestas.
+  name String @db.VarChar(150)
+
+  // Explicación del alcance general del producto o servicio.
+  description String? @db.Text
+
+  // Área responsable del producto: diseño o desarrollo.
+  area DmProductArea
+
+  // Forma en que debe calcularse el precio.
+  pricingType DmPricingType @map("pricing_type")
+
+  // Precio base expresado en la moneda indicada por currency.
+  basePrice Decimal @map("base_price") @db.Decimal(12, 2)
+
+  // Código ISO de la moneda. Para la demo se utilizará USD por defecto.
+  currency String @default("USD") @db.VarChar(3)
+
+  // Nombre de la unidad cotizable, por ejemplo: video, página o servicio.
+  unitName String @default("servicio") @map("unit_name") @db.VarChar(60)
+
+  // Periodicidad de cobro. Los productos no recurrentes utilizan ONE_TIME.
+  billingPeriod DmBillingPeriod @default(ONE_TIME) @map("billing_period")
+
+  // Cantidad numérica del tiempo estimado de entrega, por ejemplo: 2.
+  estimatedDeliveryValue Int? @map("estimated_delivery_value")
+
+  // Unidad del tiempo estimado, por ejemplo: WEEKS.
+  estimatedDeliveryUnit DmDeliveryUnit? @map("estimated_delivery_unit")
+
+  // Cantidad mínima que puede solicitarse del producto.
+  minimumQuantity Int @default(1) @map("minimum_quantity")
+
+  // Permite ocultar productos sin eliminarlos de la base de datos.
+  isActive Boolean @default(true) @map("is_active")
+
+  // Posición utilizada para ordenar productos en el frontend y en respuestas del MCP.
+  displayOrder Int @default(0) @map("display_order")
+
+  // Fechas de auditoría básicas del registro.
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  // Índices para las consultas más comunes del catálogo.
+  @@index([area, isActive])
+  @@index([pricingType, isActive])
+  @@index([displayOrder])
+  // Nombre físico de la tabla en PostgreSQL.
+  @@map("dm_products")
 }
